@@ -104,16 +104,16 @@ def generate_pdf_devis(devis):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=2*cm,
+        topMargin=1.5*cm,  # Réduit pour remonter le titre
         bottomMargin=3*cm
     )
     
     styles = create_styles()
     elements = []
     
-    # Titre simple
+    # Titre aligné à gauche et remonté
     title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=12)
+                                fontName='Helvetica-Bold', spaceAfter=8, alignment=TA_LEFT)
     elements.append(Paragraph("Devis", title_style))
     
     # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
@@ -220,12 +220,27 @@ Numéro de TVA: {devis.client_tva}"""
     
     # Articles
     for item in devis.items:
-        # Description principale en gras
-        desc_text = f"<b>{item.description}</b>"
+        # Vérifier si c'est une ligne de section (titre en majuscules)
+        is_section = item.description.isupper()
         
-        # Si il y a des détails, les ajouter sur des lignes séparées
-        if item.details:
-            # Les détails sont dans une cellule séparée qui span toutes les colonnes
+        if is_section:
+            # Ligne de section avec fond bleu et texte blanc
+            items_data.append([
+                Paragraph(f"<font color='white'><b>{item.description}</b></font>", 
+                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white)),
+                Paragraph(f"<font color='white'>{item.quantite}</font>", 
+                         ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
+                Paragraph(f"<font color='white'>{item.prix_unitaire:.2f} €</font>", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT)),
+                Paragraph(f"<font color='white'>{item.tva_taux} %</font>", 
+                         ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
+                Paragraph(f"<font color='white'>{item.total_ht:.2f} €</font>", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT))
+            ])
+        else:
+            # Description principale normale
+            desc_text = f"<b>{item.description}</b>"
+            
             items_data.append([
                 Paragraph(desc_text, item_desc_style),
                 Paragraph(str(item.quantite), item_center_style),
@@ -233,22 +248,15 @@ Numéro de TVA: {devis.client_tva}"""
                 Paragraph(f"{item.tva_taux} %", item_center_style),
                 Paragraph(f"{item.total_ht:.2f} €", item_right_style)
             ])
-            
+        
+        # Si il y a des détails et que ce n'est pas une section
+        if item.details and not is_section:
             # Ajouter les détails sur une nouvelle ligne
             detail_text = "<br/>".join(item.details)
             items_data.append([
                 Paragraph(detail_text, ParagraphStyle('DetailStyle', fontSize=9, 
                          textColor=colors.black, leftIndent=0)),
                 '', '', '', ''
-            ])
-        else:
-            # Pas de détails, juste la ligne principale
-            items_data.append([
-                Paragraph(desc_text, item_desc_style),
-                Paragraph(str(item.quantite), item_center_style),
-                Paragraph(f"{item.prix_unitaire:.2f} €", item_right_style),
-                Paragraph(f"{item.tva_taux} %", item_center_style),
-                Paragraph(f"{item.total_ht:.2f} €", item_right_style)
             ])
         
         # Ligne de remise si applicable
@@ -294,14 +302,21 @@ Numéro de TVA: {devis.client_tva}"""
         ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
     ]
     
-    # Pour les lignes de détails, faire un span
+    # Appliquer le fond bleu aux lignes de section et gérer les spans
     row_num = 1
     for item in devis.items:
-        if item.details:
+        # Si c'est une section (titre en majuscules), appliquer le fond bleu
+        if item.description.isupper():
+            table_style.append(('BACKGROUND', (0, row_num), (-1, row_num), colors.HexColor('#2d3436')))
+            table_style.append(('TEXTCOLOR', (0, row_num), (-1, row_num), colors.white))
+            table_style.append(('FONTNAME', (0, row_num), (-1, row_num), 'Helvetica-Bold'))
+        
+        row_num += 1
+        
+        # Si il y a des détails et ce n'est pas une section
+        if item.details and not item.description.isupper():
             # La ligne de détails doit span toutes les colonnes
-            table_style.append(('SPAN', (0, row_num + 1), (-1, row_num + 1)))
-            row_num += 2
-        else:
+            table_style.append(('SPAN', (0, row_num), (-1, row_num)))
             row_num += 1
         
         if item.remise > 0:
@@ -334,9 +349,10 @@ Numéro de TVA: {devis.client_tva}"""
     
     elements.append(totals_table)
     
-    # Si il y a des conditions ou informations supplémentaires
-    if devis.conditions_paiement or devis.banque_nom or devis.texte_conclusion:
-        elements.append(Spacer(1, 15*mm))
+    # Ligne de séparation bleu foncé
+    line = HRFlowable(width=18*cm, thickness=1, color=colors.HexColor('#2d3436'),
+                      spaceBefore=15, spaceAfter=15)
+    elements.append(line)
     
     # Conditions de paiement
     if devis.conditions_paiement:
@@ -412,16 +428,16 @@ def generate_pdf_facture(facture):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=2*cm,
+        topMargin=1.5*cm,  # Réduit pour remonter le titre
         bottomMargin=3*cm
     )
     
     styles = create_styles()
     elements = []
     
-    # Titre simple
-    title_style = ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=10)
+    # Titre aligné à gauche et remonté
+    title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
+                                fontName='Helvetica-Bold', spaceAfter=8, alignment=TA_LEFT)
     elements.append(Paragraph("Facture", title_style))
     
     # Informations de la facture - alignées en deux colonnes
@@ -538,9 +554,26 @@ Numéro de TVA: {facture.client_tva}"""
     
     # Articles
     for item in facture.items:
-        desc_text = f"<b>{item.description}</b>"
+        # Vérifier si c'est une ligne de section
+        is_section = item.description.isupper()
         
-        if item.details:
+        if is_section:
+            # Ligne de section avec fond bleu et texte blanc
+            items_data.append([
+                Paragraph(f"<font color='white'><b>{item.description}</b></font>", 
+                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white)),
+                Paragraph(f"<font color='white'>{item.quantite}</font>", 
+                         ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
+                Paragraph(f"<font color='white'>{item.prix_unitaire:.2f} €</font>", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT)),
+                Paragraph(f"<font color='white'>{item.tva_taux} %</font>", 
+                         ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
+                Paragraph(f"<font color='white'>{item.total_ht:.2f} €</font>", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT))
+            ])
+        else:
+            desc_text = f"<b>{item.description}</b>"
+            
             items_data.append([
                 Paragraph(desc_text, item_desc_style),
                 Paragraph(str(item.quantite), item_center_style),
@@ -548,20 +581,13 @@ Numéro de TVA: {facture.client_tva}"""
                 Paragraph(f"{item.tva_taux} %", item_center_style),
                 Paragraph(f"{item.total_ht:.2f} €", item_right_style)
             ])
-            
+        
+        if item.details and not is_section:
             detail_text = "<br/>".join(item.details)
             items_data.append([
                 Paragraph(detail_text, ParagraphStyle('DetailStyle', fontSize=9, 
                          textColor=colors.black, leftIndent=0)),
                 '', '', '', ''
-            ])
-        else:
-            items_data.append([
-                Paragraph(desc_text, item_desc_style),
-                Paragraph(str(item.quantite), item_center_style),
-                Paragraph(f"{item.prix_unitaire:.2f} €", item_right_style),
-                Paragraph(f"{item.tva_taux} %", item_center_style),
-                Paragraph(f"{item.total_ht:.2f} €", item_right_style)
             ])
         
         if item.remise > 0:
@@ -601,13 +627,18 @@ Numéro de TVA: {facture.client_tva}"""
         ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
     ]
     
-    # Gérer les spans pour les détails
+    # Appliquer le fond bleu aux lignes de section et gérer les spans
     row_num = 1
     for item in facture.items:
-        if item.details:
-            table_style.append(('SPAN', (0, row_num + 1), (-1, row_num + 1)))
-            row_num += 2
-        else:
+        if item.description.isupper():
+            table_style.append(('BACKGROUND', (0, row_num), (-1, row_num), colors.HexColor('#2d3436')))
+            table_style.append(('TEXTCOLOR', (0, row_num), (-1, row_num), colors.white))
+            table_style.append(('FONTNAME', (0, row_num), (-1, row_num), 'Helvetica-Bold'))
+        
+        row_num += 1
+        
+        if item.details and not item.description.isupper():
+            table_style.append(('SPAN', (0, row_num), (-1, row_num)))
             row_num += 1
         if item.remise > 0:
             row_num += 1
@@ -639,9 +670,10 @@ Numéro de TVA: {facture.client_tva}"""
     
     elements.append(totals_table)
     
-    # Conditions et informations supplémentaires
-    if facture.conditions_paiement or facture.banque_nom:
-        elements.append(Spacer(1, 15*mm))
+    # Ligne de séparation bleu foncé
+    line = HRFlowable(width=18*cm, thickness=1, color=colors.HexColor('#2d3436'),
+                      spaceBefore=15, spaceAfter=15)
+    elements.append(line)
     
     # Conditions de paiement
     if facture.conditions_paiement:
