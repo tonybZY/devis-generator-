@@ -25,44 +25,33 @@ class DevisItem:
 
 @dataclass
 class Devis:
+    # Champs OBLIGATOIRES (sans valeur par défaut) EN PREMIER
     numero: str
     date_emission: str
     date_expiration: str
-    
-    # Fournisseur - tous les champs modifiables
     fournisseur_nom: str
     fournisseur_adresse: str
     fournisseur_ville: str
     fournisseur_email: str
     fournisseur_siret: str
-    fournisseur_telephone: str = ""
-    
-    # Client - tous les champs modifiables
     client_nom: str
     client_adresse: str
     client_ville: str
     client_siret: str
     client_tva: str
+    
+    # Champs OPTIONNELS (avec valeur par défaut) APRÈS
+    fournisseur_telephone: str = ""
     client_telephone: str = ""
     client_email: str = ""
-    
-    # Informations bancaires - modifiables
     banque_nom: str = "BNP Paribas"
     banque_iban: str = "FR76 3000 4008 2800 0123 4567 890"
     banque_bic: str = "BNPAFRPPXXX"
-    
-    # Conditions - modifiables
     conditions_paiement: str = "Paiement à 30 jours"
     penalites_retard: str = "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée"
-    
-    # Textes personnalisables
     texte_intro: str = ""
     texte_conclusion: str = "Nous restons à votre disposition pour toute information complémentaire."
-    
-    # Articles
     items: List[DevisItem] = field(default_factory=list)
-    
-    # Totaux
     total_ht: float = 0
     total_tva: float = 0
     total_ttc: float = 0
@@ -124,45 +113,34 @@ class Devis:
 @dataclass
 class Facture:
     """Modèle pour les factures - similaire au devis avec quelques différences"""
+    # Champs OBLIGATOIRES EN PREMIER
     numero: str
     date_emission: str
-    date_echeance: str  # Au lieu de date_expiration
-    
-    # Fournisseur
+    date_echeance: str
     fournisseur_nom: str
     fournisseur_adresse: str
     fournisseur_ville: str
     fournisseur_email: str
     fournisseur_siret: str
-    fournisseur_telephone: str = ""
-    
-    # Client
     client_nom: str
     client_adresse: str
     client_ville: str
     client_siret: str
     client_tva: str
+    
+    # Champs OPTIONNELS APRÈS
+    fournisseur_telephone: str = ""
     client_telephone: str = ""
     client_email: str = ""
-    
-    # Informations bancaires
     banque_nom: str = "BNP Paribas"
     banque_iban: str = "FR76 3000 4008 2800 0123 4567 890"
     banque_bic: str = "BNPAFRPPXXX"
-    
-    # Conditions et statut
     conditions_paiement: str = "Paiement à réception"
     penalites_retard: str = "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée"
-    statut_paiement: str = "En attente"  # En attente, Payée, En retard
-    
-    # Références
+    statut_paiement: str = "En attente"
     numero_commande: str = ""
     reference_devis: str = ""
-    
-    # Articles (même structure que devis)
     items: List[DevisItem] = field(default_factory=list)
-    
-    # Totaux
     total_ht: float = 0
     total_tva: float = 0
     total_ttc: float = 0
