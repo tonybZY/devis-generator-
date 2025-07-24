@@ -111,11 +111,17 @@ def generate_pdf_devis(devis):
     styles = create_styles()
     elements = []
     
-    # Titre simple aligné complètement à gauche
-    title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=12,
-                                alignment=TA_LEFT, leftIndent=0, rightIndent=0)  # Alignement parfait à gauche
-    elements.append(Paragraph("Devis", title_style))
+    # Titre dans une table pour forcer l'alignement à gauche
+    title_data = [[Paragraph("Devis", ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
+                                fontName='Helvetica-Bold', leftIndent=0))]]
+    title_table = Table(title_data, colWidths=[18*cm])
+    title_table.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+    ]))
+    elements.append(title_table)
     
     # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
     
@@ -130,9 +136,9 @@ def generate_pdf_devis(devis):
     
     # Utiliser des paragraphes avec line height
     left_style = ParagraphStyle('LeftColumn', fontSize=10, textColor=colors.black, 
-                               fontName='Helvetica-Bold', leading=14, leftIndent=0)
+                               fontName='Helvetica-Bold', leading=14, leftIndent=0, rightIndent=0)
     right_style = ParagraphStyle('RightColumn', fontSize=10, textColor=colors.black, 
-                                leading=14, leftIndent=0)
+                                leading=14, leftIndent=0, rightIndent=0)
     
     # Table invisible pour aligner les deux colonnes
     info_table = Table([[
@@ -152,8 +158,8 @@ def generate_pdf_devis(devis):
     
     # Informations Fournisseur et Client - style exact du modèle
     company_label_style = ParagraphStyle('CompanyLabel', fontSize=10, textColor=colors.black, 
-                                        fontName='Helvetica-Bold', leftIndent=0)
-    company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0)
+                                        fontName='Helvetica-Bold', leftIndent=0, rightIndent=0)
+    company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0, rightIndent=0)
     
     # Créer les contenus en une seule cellule par colonne
     fournisseur_text = f"""<b>{devis.fournisseur_nom}</b><br/>
@@ -422,11 +428,17 @@ def generate_pdf_facture(facture):
     styles = create_styles()
     elements = []
     
-    # Titre simple aligné complètement à gauche
-    title_style = ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=10,
-                                alignment=TA_LEFT, leftIndent=0, rightIndent=0)  # Alignement parfait à gauche
-    elements.append(Paragraph("Facture", title_style))
+    # Titre dans une table pour forcer l'alignement à gauche
+    title_data = [[Paragraph("Facture", ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
+                                fontName='Helvetica-Bold', leftIndent=0))]]
+    title_table = Table(title_data, colWidths=[18*cm])
+    title_table.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(title_table)
     
     # Informations de la facture - alignées en deux colonnes
     
@@ -459,9 +471,9 @@ def generate_pdf_facture(facture):
     
     # Utiliser des paragraphes avec line height
     left_style = ParagraphStyle('LeftColumn', fontSize=10, textColor=colors.black, 
-                               fontName='Helvetica-Bold', leading=14, leftIndent=0)
+                               fontName='Helvetica-Bold', leading=14, leftIndent=0, rightIndent=0)
     right_style = ParagraphStyle('RightColumn', fontSize=10, textColor=colors.black, 
-                                leading=14, leftIndent=0)
+                                leading=14, leftIndent=0, rightIndent=0)
     
     # Table invisible pour aligner les deux colonnes
     info_table = Table([[
@@ -480,7 +492,7 @@ def generate_pdf_facture(facture):
     elements.append(Spacer(1, 10*mm))
     
     # Informations Fournisseur et Client - style exact du modèle
-    company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0)
+    company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0, rightIndent=0)
     
     # Créer les contenus
     fournisseur_text = f"""<b>{facture.fournisseur_nom}</b><br/>
