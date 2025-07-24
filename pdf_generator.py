@@ -104,17 +104,17 @@ def generate_pdf_devis(devis):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=1.5*cm,  # Réduit pour remonter le titre
+        topMargin=0.8*cm,  # Encore plus réduit pour remonter davantage le titre
         bottomMargin=3*cm
     )
     
     styles = create_styles()
     elements = []
     
-    # Titre simple aligné à gauche
+    # Titre simple aligné complètement à gauche
     title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
                                 fontName='Helvetica-Bold', spaceAfter=12,
-                                alignment=TA_LEFT)  # Alignement à gauche
+                                alignment=TA_LEFT, leftIndent=0)  # Alignement à gauche sans indentation
     elements.append(Paragraph("Devis", title_style))
     
     # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
@@ -415,17 +415,17 @@ def generate_pdf_facture(facture):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=1.5*cm,  # Réduit pour remonter le titre
+        topMargin=0.8*cm,  # Encore plus réduit pour remonter davantage le titre
         bottomMargin=3*cm
     )
     
     styles = create_styles()
     elements = []
     
-    # Titre simple aligné à gauche
+    # Titre simple aligné complètement à gauche
     title_style = ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
                                 fontName='Helvetica-Bold', spaceAfter=10,
-                                alignment=TA_LEFT)  # Alignement à gauche
+                                alignment=TA_LEFT, leftIndent=0)  # Alignement à gauche sans indentation
     elements.append(Paragraph("Facture", title_style))
     
     # Informations de la facture - alignées en deux colonnes
