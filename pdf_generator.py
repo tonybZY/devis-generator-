@@ -112,41 +112,42 @@ def generate_pdf_devis(devis):
     elements = []
     
     # Titre simple
-    title_style = ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=15)
+    title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
+                                fontName='Helvetica-Bold', spaceAfter=12)
     elements.append(Paragraph("Devis", title_style))
     
-    # Informations du devis - style exact du modèle
-    info_label_style = ParagraphStyle('InfoLabel', fontSize=10, textColor=colors.black, 
-                                     fontName='Helvetica-Bold')
-    info_value_style = ParagraphStyle('InfoValue', fontSize=10, textColor=colors.black)
+    # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
     
-    # Utiliser une table invisible pour l'alignement parfait
-    info_data = [
-        [Paragraph("Numéro de devis", info_label_style), 
-         Paragraph(devis.numero, info_value_style)],
-        [Paragraph("Date d'émission", info_label_style), 
-         Paragraph(devis.date_emission, info_value_style)],
-        [Paragraph("Date d'expiration", info_label_style), 
-         Paragraph(devis.date_expiration, info_value_style)]
-    ]
+    # Créer deux colonnes : labels à gauche, valeurs à droite
+    left_column_data = """<b>Numéro de devis</b><br/>
+<b>Date d'émission</b><br/>
+<b>Date d'expiration</b>"""
     
-    # Table avec largeurs spécifiques pour correspondre au modèle
-    info_table = Table(info_data, colWidths=[4.5*cm, 10*cm])
+    right_column_data = f"""{devis.numero}<br/>
+{devis.date_emission}<br/>
+{devis.date_expiration}"""
+    
+    # Utiliser des paragraphes avec line height
+    left_style = ParagraphStyle('LeftColumn', fontSize=10, textColor=colors.black, 
+                               fontName='Helvetica-Bold', leading=14)
+    right_style = ParagraphStyle('RightColumn', fontSize=10, textColor=colors.black, 
+                                leading=14)
+    
+    # Table invisible pour aligner les deux colonnes
+    info_table = Table([[
+        Paragraph(left_column_data, left_style),
+        Paragraph(right_column_data, right_style)
+    ]], colWidths=[9*cm, 9*cm])
     info_table.setStyle(TableStyle([
-        # Pas de bordures
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        # Padding minimal
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
         ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(info_table)
-    elements.append(Spacer(1, 20*mm))
+    elements.append(Spacer(1, 10*mm))
     
     # Informations Fournisseur et Client - style exact du modèle
     company_label_style = ParagraphStyle('CompanyLabel', fontSize=10, textColor=colors.black, 
@@ -420,64 +421,59 @@ def generate_pdf_facture(facture):
     
     # Titre simple
     title_style = ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=15)
+                                fontName='Helvetica-Bold', spaceAfter=10)
     elements.append(Paragraph("Facture", title_style))
     
-    # Informations de la facture - style exact du modèle
-    info_label_style = ParagraphStyle('InfoLabel', fontSize=10, textColor=colors.black, 
-                                     fontName='Helvetica-Bold')
-    info_value_style = ParagraphStyle('InfoValue', fontSize=10, textColor=colors.black)
+    # Informations de la facture - alignées en deux colonnes
     
-    # Construire les données d'info
-    info_data = [
-        [Paragraph("Numéro de facture", info_label_style), 
-         Paragraph(facture.numero, info_value_style)],
-        [Paragraph("Date d'émission", info_label_style), 
-         Paragraph(facture.date_emission, info_value_style)],
-        [Paragraph("Date d'échéance", info_label_style), 
-         Paragraph(facture.date_echeance, info_value_style)]
-    ]
+    # Créer deux colonnes
+    left_column_data = "<b>Numéro de facture</b><br/>"
+    left_column_data += "<b>Date d'émission</b><br/>"
+    left_column_data += "<b>Date d'échéance</b><br/>"
+    left_column_data += "<b>Statut</b>"
     
-    # Ajouter le statut avec couleur
+    right_column_data = f"{facture.numero}<br/>"
+    right_column_data += f"{facture.date_emission}<br/>"
+    right_column_data += f"{facture.date_echeance}<br/>"
+    
+    # Statut avec couleur
     statut_color = COULEUR_ACCENT
     if facture.statut_paiement == "En retard":
         statut_color = colors.HexColor('#e74c3c')
     elif facture.statut_paiement == "Payée":
         statut_color = colors.HexColor('#27ae60')
     
-    statut_style = ParagraphStyle('StatutStyle', fontSize=10, textColor=statut_color, 
-                                 fontName='Helvetica-Bold')
-    info_data.append([
-        Paragraph("Statut", info_label_style),
-        Paragraph(facture.statut_paiement, statut_style)
-    ])
+    right_column_data += f"<font color='{statut_color}'><b>{facture.statut_paiement}</b></font>"
     
     # Ajouter les références si présentes
     if facture.numero_commande:
-        info_data.append([
-            Paragraph("N° de commande", info_label_style),
-            Paragraph(facture.numero_commande, info_value_style)
-        ])
+        left_column_data += "<br/><b>N° de commande</b>"
+        right_column_data += f"<br/>{facture.numero_commande}"
     if facture.reference_devis:
-        info_data.append([
-            Paragraph("Réf. devis", info_label_style),
-            Paragraph(facture.reference_devis, info_value_style)
-        ])
+        left_column_data += "<br/><b>Réf. devis</b>"
+        right_column_data += f"<br/>{facture.reference_devis}"
     
-    # Table invisible pour l'alignement
-    info_table = Table(info_data, colWidths=[4.5*cm, 10*cm])
+    # Utiliser des paragraphes avec line height
+    left_style = ParagraphStyle('LeftColumn', fontSize=10, textColor=colors.black, 
+                               fontName='Helvetica-Bold', leading=14)
+    right_style = ParagraphStyle('RightColumn', fontSize=10, textColor=colors.black, 
+                                leading=14)
+    
+    # Table invisible pour aligner les deux colonnes
+    info_table = Table([[
+        Paragraph(left_column_data, left_style),
+        Paragraph(right_column_data, right_style)
+    ]], colWidths=[9*cm, 9*cm])
     info_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
         ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(info_table)
-    elements.append(Spacer(1, 20*mm))
+    elements.append(Spacer(1, 10*mm))
     
     # Informations Fournisseur et Client - style exact du modèle
     company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black)
@@ -513,7 +509,7 @@ Numéro de TVA: {facture.client_tva}"""
     ]))
     
     elements.append(company_table)
-    elements.append(Spacer(1, 20*mm))
+    elements.append(Spacer(1, 15*mm))
     
     # Tableau des articles - même style que devis
     items_data = []
