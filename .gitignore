@@ -13,6 +13,7 @@ ENV/
 # Fichiers générés
 generated/*.pdf
 generated/*.docx
+!generated/.gitkeep
 
 # IDE
 .vscode/
@@ -24,5 +25,23 @@ generated/*.docx
 .DS_Store
 Thumbs.db
 
-# Environnement
+# Environnement et sécurité
 .env
+.env.local
+.env.production
+*.key
+*.pem
+
+# Logs
+*.log
+logs/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporaires
+*.tmp
+*.temp
+~*
