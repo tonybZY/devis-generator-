@@ -36,34 +36,34 @@ class NumberedCanvas(canvas.Canvas):
         canvas.Canvas.save(self)
 
     def draw_page_footer(self, page_count):
-        # Ligne de séparation
+        # Ligne de séparation plus fine
         self.setStrokeColor(COULEUR_FOND)
-        self.setLineWidth(1)
-        self.line(2*cm, 3*cm, A4[0] - 2*cm, 3*cm)
+        self.setLineWidth(0.5)
+        self.line(1.5*cm, 2*cm, A4[0] - 1.5*cm, 2*cm)
         
-        # Informations de page
-        self.setFont("Helvetica", 8)
+        # Informations de page en très petit
+        self.setFont("Helvetica", 7)
         self.setFillColor(colors.grey)
         
         # Numéro de page
         self.drawRightString(
-            A4[0] - 2*cm,
-            2*cm,
+            A4[0] - 1.5*cm,
+            1.5*cm,
             f"Page {self._pageNumber}/{page_count}"
         )
         
-        # Informations légales
+        # Informations légales minimales
         self.drawCentredString(
             A4[0] / 2,
-            2*cm,
+            1.5*cm,
             f"{self.company_info.get('nom', '')} - SIRET: {self.company_info.get('siret', '')} - TVA: {self.company_info.get('tva', '')}"
         )
         
         # Email
         self.setFillColor(COULEUR_ACCENT)
         self.drawString(
-            2*cm,
-            2*cm,
+            1.5*cm,
+            1.5*cm,
             self.company_info.get('email', '')
         )
 
@@ -146,184 +146,163 @@ def create_styles():
     
     return styles
 
-def create_header_table(doc_type, company_name):
-    """Créer un en-tête compact avec titre à gauche et entreprise à droite"""
+def create_minimal_header(doc_type):
+    """Créer un en-tête très minimal - juste le titre"""
     styles = create_styles()
     
-    # Créer une table pour l'en-tête
-    header_data = [[
-        Paragraph(doc_type, styles['DocumentTitle']),
-        Paragraph(company_name.upper(), styles['CompanyName'])
-    ]]
+    # Style pour un titre vraiment compact
+    title_style = ParagraphStyle(
+        'MinimalTitle',
+        fontSize=16,  # Beaucoup plus petit
+        textColor=COULEUR_PRINCIPALE,
+        fontName='Helvetica-Bold',
+        spaceAfter=3
+    )
     
-    header_table = Table(header_data, colWidths=[10*cm, 8*cm])
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LINEBELOW', (0, 0), (-1, 0), 2, COULEUR_PRINCIPALE),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-    ]))
-    
-    return header_table
+    return Paragraph(doc_type, title_style)
 
 def generate_pdf_devis(devis):
-    """Générer un PDF de devis avec design unifié"""
+    """Générer un PDF de devis avec design minimal"""
     filename = os.path.join('generated', f'devis_{devis.numero}.pdf')
     
-    # Configuration du document avec moins de marge en haut
+    # Configuration du document avec marges minimales
     doc = SimpleDocTemplate(
         filename,
         pagesize=A4,
-        rightMargin=2*cm,
-        leftMargin=2*cm,
-        topMargin=1.5*cm,  # Réduit de 2cm à 1.5cm
-        bottomMargin=4*cm
+        rightMargin=1.5*cm,
+        leftMargin=1.5*cm,
+        topMargin=1*cm,  # Encore plus réduit
+        bottomMargin=2.5*cm  # Réduit pour footer minimal
     )
     
     styles = create_styles()
     elements = []
     
-    # En-tête compact
-    elements.append(create_header_table("DEVIS", devis.fournisseur_nom))
-    elements.append(Spacer(1, 8*mm))
+    # En-tête très minimal - juste le titre
+    elements.append(create_minimal_header("Devis"))
+    elements.append(Spacer(1, 5*mm))
     
-    # Informations du devis dans un format plus compact
+    # Informations du devis ultra-compactes
+    info_style = ParagraphStyle('InfoStyle', fontSize=9, textColor=COULEUR_TEXTE)
+    info_bold = ParagraphStyle('InfoBold', fontSize=9, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold')
+    
     info_data = [
-        [Paragraph("<b>Numéro</b>", styles['SectionHeader']), 
-         Paragraph(devis.numero, styles['CustomNormal']),
-         Paragraph("<b>Date d'émission</b>", styles['SectionHeader']), 
-         Paragraph(devis.date_emission, styles['CustomNormal'])],
-        [Paragraph("<b>Validité</b>", styles['SectionHeader']), 
-         Paragraph(devis.date_expiration, styles['CustomNormal']),
-         "", ""]
+        [Paragraph("Numéro de devis", info_bold), Paragraph(devis.numero, info_style)],
+        [Paragraph("Date d'émission", info_bold), Paragraph(devis.date_emission, info_style)],
+        [Paragraph("Date d'expiration", info_bold), Paragraph(devis.date_expiration, info_style)]
     ]
     
-    info_table = Table(info_data, colWidths=[3.5*cm, 5*cm, 4*cm, 5*cm])
+    info_table = Table(info_data, colWidths=[4.5*cm, 6*cm])
     info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8f9fa')),
-        ('BOX', (0, 0), (-1, -1), 1, COULEUR_FOND),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.white),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(info_table)
-    elements.append(Spacer(1, 12*mm))
+    elements.append(Spacer(1, 8*mm))
     
-    # Informations Fournisseur et Client côte à côte
-    company_headers = [
-        [Paragraph("<b>ÉMETTEUR</b>", ParagraphStyle('CompanyHeader', 
-            fontSize=11, textColor=COULEUR_PRINCIPALE, fontName='Helvetica-Bold')),
-         Paragraph("<b>CLIENT</b>", ParagraphStyle('CompanyHeader', 
-            fontSize=11, textColor=COULEUR_PRINCIPALE, fontName='Helvetica-Bold'))]
-    ]
-    
-    header_table = Table(company_headers, colWidths=[9*cm, 9*cm])
-    header_table.setStyle(TableStyle([
-        ('LINEBELOW', (0, 0), (-1, -1), 1.5, COULEUR_PRINCIPALE),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-    elements.append(header_table)
-    
-    # Contenu des informations
+    # Informations Fournisseur et Client - très compact
+    # Juste les noms en gras
     company_data = [
-        [Paragraph(f"<b>{devis.fournisseur_nom}</b>", styles['CustomNormal']),
-         Paragraph(f"<b>{devis.client_nom}</b>", styles['CustomNormal'])],
-        [Paragraph(devis.fournisseur_adresse, styles['CustomNormal']), 
-         Paragraph(devis.client_adresse, styles['CustomNormal'])],
-        [Paragraph(devis.fournisseur_ville, styles['CustomNormal']), 
-         Paragraph(devis.client_ville, styles['CustomNormal'])],
-        [Paragraph(f"Email: {devis.fournisseur_email}", styles['CustomNormal']), 
-         Paragraph(f"SIRET: {devis.client_siret}", styles['CustomNormal'])],
-        [Paragraph(f"Tél: {devis.fournisseur_telephone}", styles['CustomNormal']), 
-         Paragraph(f"N° TVA: {devis.client_tva}", styles['CustomNormal'])],
-        [Paragraph(f"SIRET: {devis.fournisseur_siret}", styles['CustomNormal']), 
-         Paragraph(f"Email: {devis.client_email}", styles['CustomNormal']) if devis.client_email else Paragraph("", styles['CustomNormal'])],
+        [Paragraph(f"<b>{devis.fournisseur_nom}</b>", info_style),
+         Paragraph(f"<b>{devis.client_nom}</b>", info_style)],
+        [Paragraph(devis.fournisseur_adresse, info_style), 
+         Paragraph(devis.client_adresse, info_style)],
+        [Paragraph(devis.fournisseur_ville, info_style), 
+         Paragraph(devis.client_ville, info_style)],
+        [Paragraph(devis.fournisseur_email, info_style), 
+         Paragraph(f"SIRET: {devis.client_siret}", info_style)],
+        [Paragraph(f"SIRET: {devis.fournisseur_siret}", info_style), 
+         Paragraph(f"N° TVA: {devis.client_tva}", info_style)]
     ]
+    
+    # Si email client
+    if devis.client_email:
+        company_data.append([
+            Paragraph("", info_style),
+            Paragraph(devis.client_email, info_style)
+        ])
     
     company_table = Table(company_data, colWidths=[9*cm, 9*cm])
     company_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (0, 0), (-1, -1), 5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 1),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(company_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 10*mm))
     
     # Texte d'introduction si présent
     if devis.texte_intro:
         intro_style = ParagraphStyle('IntroStyle', 
             parent=styles['CustomNormal'],
-            fontSize=10,
+            fontSize=9,
             textColor=COULEUR_TEXTE,
             alignment=TA_JUSTIFY
         )
         elements.append(Paragraph(devis.texte_intro, intro_style))
-        elements.append(Spacer(1, 8*mm))
+        elements.append(Spacer(1, 5*mm))
     
-    # Tableau des articles
+    # Tableau des articles - très compact
     items_data = []
     
     # En-tête du tableau
     headers = [
         Paragraph("<b>Description</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, fontName='Helvetica-Bold')),
         Paragraph("<b>Qté</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_CENTER, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, alignment=TA_CENTER, fontName='Helvetica-Bold')),
         Paragraph("<b>Prix unitaire</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_RIGHT, fontName='Helvetica-Bold')),
-        Paragraph("<b>TVA</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_CENTER, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold')),
+        Paragraph("<b>TVA (%)</b>", ParagraphStyle('TableHeader', 
+            textColor=colors.white, fontSize=9, alignment=TA_CENTER, fontName='Helvetica-Bold')),
         Paragraph("<b>Total HT</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
+            textColor=colors.white, fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
     ]
     items_data.append(headers)
     
     # Articles
-    row_index = 0
+    item_style = ParagraphStyle('ItemStyle', fontSize=8, textColor=COULEUR_TEXTE)
+    detail_style = ParagraphStyle('DetailStyle', fontSize=8, textColor=colors.HexColor('#7f8c8d'), leftIndent=10)
+    money_style = ParagraphStyle('MoneyStyle', fontSize=8, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold', alignment=TA_RIGHT)
+    
     for item in devis.items:
         # Ligne principale
         items_data.append([
-            Paragraph(f"<b>{item.description}</b>", styles['CustomNormal']),
-            Paragraph(str(item.quantite), ParagraphStyle('ItemCenter', 
-                parent=styles['CustomNormal'], alignment=TA_CENTER)),
-            Paragraph(f"{item.prix_unitaire:.2f} €", styles['MoneyStyle']),
-            Paragraph(f"{item.tva_taux}%", ParagraphStyle('ItemCenter', 
-                parent=styles['CustomNormal'], alignment=TA_CENTER)),
-            Paragraph(f"{item.total_ht:.2f} €", styles['MoneyStyle'])
+            Paragraph(f"<b>{item.description}</b>", item_style),
+            Paragraph(str(item.quantite), ParagraphStyle('ItemCenter', parent=item_style, alignment=TA_CENTER)),
+            Paragraph(f"{item.prix_unitaire:.2f} €", money_style),
+            Paragraph(f"{item.tva_taux}", ParagraphStyle('ItemCenter', parent=item_style, alignment=TA_CENTER)),
+            Paragraph(f"{item.total_ht:.2f} €", money_style)
         ])
-        row_index += 1
         
         # Détails
         if item.details:
             detail_text = "<br/>".join([f"• {detail}" for detail in item.details])
             items_data.append([
-                Paragraph(detail_text, styles['DetailStyle']),
+                Paragraph(detail_text, detail_style),
                 '', '', '', ''
             ])
-            row_index += 1
         
         # Remise
         if item.remise > 0:
             items_data.append([
                 '', '', '',
                 Paragraph("Remise", ParagraphStyle('Remise', 
-                    fontSize=9, textColor=COULEUR_ACCENT, alignment=TA_RIGHT)),
+                    fontSize=8, textColor=COULEUR_ACCENT, alignment=TA_RIGHT)),
                 Paragraph(f"-{item.remise:.2f} €", ParagraphStyle('RemiseAmount',
-                    fontSize=9, textColor=COULEUR_ACCENT, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
+                    fontSize=8, textColor=COULEUR_ACCENT, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
             ])
-            row_index += 1
     
     # Créer le tableau
     col_widths = [8.5*cm, 2*cm, 3*cm, 2*cm, 3*cm]
     items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
     
-    # Style du tableau avec couleur unifiée
+    # Style du tableau compact
     table_style = [
         # En-tête
         ('BACKGROUND', (0, 0), (-1, 0), COULEUR_PRINCIPALE),
@@ -333,13 +312,13 @@ def generate_pdf_devis(devis):
         ('ALIGN', (3, 0), (3, 0), 'CENTER'),
         ('ALIGN', (4, 0), (4, 0), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
         
         # Corps
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('ALIGN', (1, 1), (1, -1), 'CENTER'),
         ('ALIGN', (2, 1), (2, -1), 'RIGHT'),
         ('ALIGN', (3, 1), (3, -1), 'CENTER'),
@@ -347,15 +326,14 @@ def generate_pdf_devis(devis):
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         
         # Bordures
-        ('BOX', (0, 0), (-1, -1), 1, COULEUR_FOND),
-        ('INNERGRID', (0, 0), (-1, 0), 1, COULEUR_PRINCIPALE),
-        ('LINEBELOW', (0, 0), (-1, -1), 0.5, COULEUR_FOND),
+        ('BOX', (0, 0), (-1, -1), 0.5, COULEUR_PRINCIPALE),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.25, COULEUR_FOND),
         
-        # Padding
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        # Padding minimal
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
     ]
     
     # Alternance de couleurs
@@ -474,188 +452,168 @@ def generate_pdf_devis(devis):
     return filename
 
 def generate_pdf_facture(facture):
-    """Générer un PDF de facture avec le même design unifié"""
+    """Générer un PDF de facture avec design minimal"""
     filename = os.path.join('generated', f'facture_{facture.numero}.pdf')
     
     # Configuration du document
     doc = SimpleDocTemplate(
         filename,
         pagesize=A4,
-        rightMargin=2*cm,
-        leftMargin=2*cm,
-        topMargin=1.5*cm,  # Même marge réduite
-        bottomMargin=4*cm
+        rightMargin=1.5*cm,
+        leftMargin=1.5*cm,
+        topMargin=1*cm,
+        bottomMargin=2.5*cm  # Réduit pour footer minimal
     )
     
     styles = create_styles()
     elements = []
     
-    # En-tête compact (même style que devis)
-    elements.append(create_header_table("FACTURE", facture.fournisseur_nom))
-    elements.append(Spacer(1, 8*mm))
+    # En-tête minimal
+    elements.append(create_minimal_header("Facture"))
+    elements.append(Spacer(1, 5*mm))
     
-    # Informations de la facture (format compact)
+    # Styles compacts
+    info_style = ParagraphStyle('InfoStyle', fontSize=9, textColor=COULEUR_TEXTE)
+    info_bold = ParagraphStyle('InfoBold', fontSize=9, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold')
+    
+    # Informations de la facture
     info_rows = []
-    
-    # Première ligne
     info_rows.append([
-        Paragraph("<b>Numéro</b>", styles['SectionHeader']), 
-        Paragraph(facture.numero, styles['CustomNormal']),
-        Paragraph("<b>Date</b>", styles['SectionHeader']), 
-        Paragraph(facture.date_emission, styles['CustomNormal'])
+        Paragraph("Numéro de facture", info_bold), 
+        Paragraph(facture.numero, info_style)
+    ])
+    info_rows.append([
+        Paragraph("Date d'émission", info_bold), 
+        Paragraph(facture.date_emission, info_style)
+    ])
+    info_rows.append([
+        Paragraph("Date d'échéance", info_bold), 
+        Paragraph(facture.date_echeance, info_style)
     ])
     
-    # Deuxième ligne
-    info_rows.append([
-        Paragraph("<b>Échéance</b>", styles['SectionHeader']), 
-        Paragraph(facture.date_echeance, styles['CustomNormal']),
-        Paragraph("<b>Statut</b>", styles['SectionHeader']),
-        Paragraph("", styles['CustomNormal'])  # Placeholder
-    ])
-    
-    # Créer le paragraphe de statut avec la bonne couleur
+    # Statut avec couleur
     statut_color = COULEUR_ACCENT
     if facture.statut_paiement == "En retard":
-        statut_color = colors.HexColor('#e74c3c')  # Rouge
+        statut_color = colors.HexColor('#e74c3c')
     elif facture.statut_paiement == "Payée":
-        statut_color = colors.HexColor('#27ae60')  # Vert
+        statut_color = colors.HexColor('#27ae60')
     
-    # Remplacer le placeholder par le statut coloré
-    info_rows[1][3] = Paragraph(f"<font color='{statut_color}'><b>{facture.statut_paiement}</b></font>", 
-                                styles['CustomNormal'])
+    info_rows.append([
+        Paragraph("Statut", info_bold),
+        Paragraph(f"<font color='{statut_color}'><b>{facture.statut_paiement}</b></font>", info_style)
+    ])
     
-    # Ajouter les références si présentes
-    if facture.numero_commande or facture.reference_devis:
-        ref_row = []
-        if facture.numero_commande:
-            ref_row.extend([
-                Paragraph("<b>Commande</b>", styles['SectionHeader']),
-                Paragraph(facture.numero_commande, styles['CustomNormal'])
-            ])
-        if facture.reference_devis:
-            ref_row.extend([
-                Paragraph("<b>Réf. devis</b>", styles['SectionHeader']),
-                Paragraph(facture.reference_devis, styles['CustomNormal'])
-            ])
-        # Compléter la ligne si nécessaire
-        while len(ref_row) < 4:
-            ref_row.extend(["", ""])
-        info_rows.append(ref_row)
+    # Références si présentes
+    if facture.numero_commande:
+        info_rows.append([
+            Paragraph("N° de commande", info_bold),
+            Paragraph(facture.numero_commande, info_style)
+        ])
+    if facture.reference_devis:
+        info_rows.append([
+            Paragraph("Réf. devis", info_bold),
+            Paragraph(facture.reference_devis, info_style)
+        ])
     
-    info_table = Table(info_rows, colWidths=[3.5*cm, 5*cm, 4*cm, 5*cm])
+    info_table = Table(info_rows, colWidths=[4.5*cm, 6*cm])
     info_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff5f5')),  # Légèrement rosé pour facture
-        ('BOX', (0, 0), (-1, -1), 1, COULEUR_FOND),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.white),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(info_table)
-    elements.append(Spacer(1, 12*mm))
+    elements.append(Spacer(1, 8*mm))
     
-    # Informations Fournisseur et Client (même structure que devis)
-    company_headers = [
-        [Paragraph("<b>ÉMETTEUR</b>", ParagraphStyle('CompanyHeader', 
-            fontSize=11, textColor=COULEUR_PRINCIPALE, fontName='Helvetica-Bold')),
-         Paragraph("<b>CLIENT</b>", ParagraphStyle('CompanyHeader', 
-            fontSize=11, textColor=COULEUR_PRINCIPALE, fontName='Helvetica-Bold'))]
-    ]
-    
-    header_table = Table(company_headers, colWidths=[9*cm, 9*cm])
-    header_table.setStyle(TableStyle([
-        ('LINEBELOW', (0, 0), (-1, -1), 1.5, COULEUR_PRINCIPALE),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-    elements.append(header_table)
-    
-    # Contenu des informations
+    # Informations Fournisseur et Client - compact
     company_data = [
-        [Paragraph(f"<b>{facture.fournisseur_nom}</b>", styles['CustomNormal']),
-         Paragraph(f"<b>{facture.client_nom}</b>", styles['CustomNormal'])],
-        [Paragraph(facture.fournisseur_adresse, styles['CustomNormal']), 
-         Paragraph(facture.client_adresse, styles['CustomNormal'])],
-        [Paragraph(facture.fournisseur_ville, styles['CustomNormal']), 
-         Paragraph(facture.client_ville, styles['CustomNormal'])],
-        [Paragraph(f"Email: {facture.fournisseur_email}", styles['CustomNormal']), 
-         Paragraph(f"SIRET: {facture.client_siret}", styles['CustomNormal'])],
-        [Paragraph(f"Tél: {facture.fournisseur_telephone}", styles['CustomNormal']), 
-         Paragraph(f"N° TVA: {facture.client_tva}", styles['CustomNormal'])],
-        [Paragraph(f"SIRET: {facture.fournisseur_siret}", styles['CustomNormal']), 
-         Paragraph(f"Email: {facture.client_email}", styles['CustomNormal']) if facture.client_email else Paragraph("", styles['CustomNormal'])],
+        [Paragraph(f"<b>{facture.fournisseur_nom}</b>", info_style),
+         Paragraph(f"<b>{facture.client_nom}</b>", info_style)],
+        [Paragraph(facture.fournisseur_adresse, info_style), 
+         Paragraph(facture.client_adresse, info_style)],
+        [Paragraph(facture.fournisseur_ville, info_style), 
+         Paragraph(facture.client_ville, info_style)],
+        [Paragraph(facture.fournisseur_email, info_style), 
+         Paragraph(f"SIRET: {facture.client_siret}", info_style)],
+        [Paragraph(f"SIRET: {facture.fournisseur_siret}", info_style), 
+         Paragraph(f"N° TVA: {facture.client_tva}", info_style)]
     ]
+    
+    if facture.client_email:
+        company_data.append([
+            Paragraph("", info_style),
+            Paragraph(facture.client_email, info_style)
+        ])
     
     company_table = Table(company_data, colWidths=[9*cm, 9*cm])
     company_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (0, 0), (-1, -1), 5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 1),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
     ]))
     
     elements.append(company_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 10*mm))
     
-    # Tableau des articles (même structure et couleurs que devis)
+    # Tableau des articles - compact
     items_data = []
     
     # En-tête du tableau
     headers = [
         Paragraph("<b>Description</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, fontName='Helvetica-Bold')),
         Paragraph("<b>Qté</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_CENTER, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, alignment=TA_CENTER, fontName='Helvetica-Bold')),
         Paragraph("<b>Prix unitaire</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_RIGHT, fontName='Helvetica-Bold')),
-        Paragraph("<b>TVA</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_CENTER, fontName='Helvetica-Bold')),
+            textColor=colors.white, fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold')),
+        Paragraph("<b>TVA (%)</b>", ParagraphStyle('TableHeader', 
+            textColor=colors.white, fontSize=9, alignment=TA_CENTER, fontName='Helvetica-Bold')),
         Paragraph("<b>Total HT</b>", ParagraphStyle('TableHeader', 
-            textColor=colors.white, fontSize=10, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
+            textColor=colors.white, fontSize=9, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
     ]
     items_data.append(headers)
     
+    # Styles pour les items
+    item_style = ParagraphStyle('ItemStyle', fontSize=8, textColor=COULEUR_TEXTE)
+    detail_style = ParagraphStyle('DetailStyle', fontSize=8, textColor=colors.HexColor('#7f8c8d'), leftIndent=10)
+    money_style = ParagraphStyle('MoneyStyle', fontSize=8, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold', alignment=TA_RIGHT)
+    
     # Articles
-    row_index = 0
     for item in facture.items:
         # Ligne principale
         items_data.append([
-            Paragraph(f"<b>{item.description}</b>", styles['CustomNormal']),
-            Paragraph(str(item.quantite), ParagraphStyle('ItemCenter', 
-                parent=styles['CustomNormal'], alignment=TA_CENTER)),
-            Paragraph(f"{item.prix_unitaire:.2f} €", styles['MoneyStyle']),
-            Paragraph(f"{item.tva_taux}%", ParagraphStyle('ItemCenter', 
-                parent=styles['CustomNormal'], alignment=TA_CENTER)),
-            Paragraph(f"{item.total_ht:.2f} €", styles['MoneyStyle'])
+            Paragraph(f"<b>{item.description}</b>", item_style),
+            Paragraph(str(item.quantite), ParagraphStyle('ItemCenter', parent=item_style, alignment=TA_CENTER)),
+            Paragraph(f"{item.prix_unitaire:.2f} €", money_style),
+            Paragraph(f"{item.tva_taux}", ParagraphStyle('ItemCenter', parent=item_style, alignment=TA_CENTER)),
+            Paragraph(f"{item.total_ht:.2f} €", money_style)
         ])
-        row_index += 1
         
         # Détails
         if item.details:
             detail_text = "<br/>".join([f"• {detail}" for detail in item.details])
             items_data.append([
-                Paragraph(detail_text, styles['DetailStyle']),
+                Paragraph(detail_text, detail_style),
                 '', '', '', ''
             ])
-            row_index += 1
         
         # Remise
         if item.remise > 0:
             items_data.append([
                 '', '', '',
                 Paragraph("Remise", ParagraphStyle('Remise', 
-                    fontSize=9, textColor=COULEUR_ACCENT, alignment=TA_RIGHT)),
+                    fontSize=8, textColor=COULEUR_ACCENT, alignment=TA_RIGHT)),
                 Paragraph(f"-{item.remise:.2f} €", ParagraphStyle('RemiseAmount',
-                    fontSize=9, textColor=COULEUR_ACCENT, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
+                    fontSize=8, textColor=COULEUR_ACCENT, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
             ])
-            row_index += 1
     
     # Créer le tableau
     col_widths = [8.5*cm, 2*cm, 3*cm, 2*cm, 3*cm]
     items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
     
-    # Style du tableau (même couleur que devis)
+    # Style du tableau
     table_style = [
         # En-tête
         ('BACKGROUND', (0, 0), (-1, 0), COULEUR_PRINCIPALE),
@@ -665,114 +623,106 @@ def generate_pdf_facture(facture):
         ('ALIGN', (3, 0), (3, 0), 'CENTER'),
         ('ALIGN', (4, 0), (4, 0), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
         
         # Corps
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('ALIGN', (1, 1), (1, -1), 'CENTER'),
         ('ALIGN', (2, 1), (2, -1), 'RIGHT'),
         ('ALIGN', (3, 1), (3, -1), 'CENTER'),
         ('ALIGN', (4, 1), (4, -1), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         
-        # Bordures
-        ('BOX', (0, 0), (-1, -1), 1, COULEUR_FOND),
-        ('INNERGRID', (0, 0), (-1, 0), 1, COULEUR_PRINCIPALE),
-        ('LINEBELOW', (0, 0), (-1, -1), 0.5, COULEUR_FOND),
+        # Bordures minimales
+        ('BOX', (0, 0), (-1, -1), 0.5, COULEUR_PRINCIPALE),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.25, COULEUR_FOND),
         
-        # Padding
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        # Padding minimal
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
     ]
-    
-    # Alternance de couleurs (légèrement rosé pour facture)
-    for i in range(1, len(items_data)):
-        if i % 2 == 0:
-            table_style.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#fff5f5')))
     
     items_table.setStyle(TableStyle(table_style))
     elements.append(items_table)
-    elements.append(Spacer(1, 12*mm))
+    elements.append(Spacer(1, 8*mm))
     
-    # Totaux (même style que devis)
+    # Totaux - compact
+    totals_style = ParagraphStyle('TotalsStyle', fontSize=9, textColor=COULEUR_TEXTE, alignment=TA_RIGHT)
+    totals_bold = ParagraphStyle('TotalsBold', fontSize=9, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold', alignment=TA_RIGHT)
+    
     totals_data = [
-        [Paragraph("Total HT", styles['CustomNormal']), 
-         Paragraph(f"{facture.total_ht:.2f} €", styles['MoneyStyle'])],
-        [Paragraph("TVA (20%)", styles['CustomNormal']), 
-         Paragraph(f"{facture.total_tva:.2f} €", styles['MoneyStyle'])],
+        [Paragraph("Total HT", totals_style), 
+         Paragraph(f"{facture.total_ht:.2f} €", totals_bold)],
+        [Paragraph("TVA (20%)", totals_style), 
+         Paragraph(f"{facture.total_tva:.2f} €", totals_bold)],
         [Paragraph("<b>TOTAL TTC</b>", ParagraphStyle('TotalTTC',
-            fontSize=14, textColor=colors.white, fontName='Helvetica-Bold')), 
+            fontSize=11, textColor=colors.white, fontName='Helvetica-Bold', alignment=TA_RIGHT)), 
          Paragraph(f"<b>{facture.total_ttc:.2f} €</b>", ParagraphStyle('TotalAmount',
-            fontSize=14, textColor=colors.white, fontName='Helvetica-Bold', alignment=TA_RIGHT))]
+            fontSize=11, textColor=colors.white, fontName='Helvetica-Bold', alignment=TA_RIGHT))]
     ]
     
-    totals_table = Table(totals_data, colWidths=[12*cm, 4*cm])
+    totals_table = Table(totals_data, colWidths=[14*cm, 4*cm])
     totals_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
         
-        # Lignes de séparation
-        ('LINEABOVE', (0, 0), (-1, 0), 1, COULEUR_FOND),
-        ('LINEABOVE', (0, -1), (-1, -1), 2, COULEUR_PRINCIPALE),
+        # Style minimal
+        ('LINEABOVE', (0, 0), (-1, 0), 0.5, COULEUR_FOND),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, COULEUR_PRINCIPALE),
         
-        # Style de la ligne total (même couleur que devis)
+        # Style de la ligne total
         ('BACKGROUND', (0, -1), (-1, -1), COULEUR_PRINCIPALE),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
-        ('TOPPADDING', (0, -1), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, -1), (-1, -1), 12),
+        ('TOPPADDING', (0, -1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, -1), (-1, -1), 8),
         
-        # Padding général
-        ('TOPPADDING', (0, 0), (-1, -2), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -2), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        # Padding général minimal
+        ('TOPPADDING', (0, 0), (-1, -2), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -2), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
     ]))
     
     elements.append(totals_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 10*mm))
     
-    # Conditions de paiement
-    elements.append(Paragraph("<b>CONDITIONS DE PAIEMENT</b>", styles['SectionHeader']))
-    elements.append(Paragraph(facture.conditions_paiement, styles['CustomNormal']))
-    elements.append(Spacer(1, 3*mm))
+    # Conditions de paiement - compact
+    cond_style = ParagraphStyle('CondStyle', fontSize=9, textColor=COULEUR_TEXTE, fontName='Helvetica-Bold')
+    elements.append(Paragraph("CONDITIONS DE PAIEMENT", cond_style))
+    elements.append(Paragraph(facture.conditions_paiement, info_style))
+    elements.append(Spacer(1, 2*mm))
     elements.append(Paragraph(facture.penalites_retard, ParagraphStyle('SmallText', 
-        fontSize=8, textColor=colors.grey, fontName='Helvetica')))
-    elements.append(Spacer(1, 12*mm))
+        fontSize=7, textColor=colors.grey, fontName='Helvetica')))
+    elements.append(Spacer(1, 8*mm))
     
     # Informations bancaires
-    bank_title = Paragraph("<b>COORDONNÉES BANCAIRES POUR LE RÈGLEMENT</b>", styles['SectionHeader'])
-    elements.append(bank_title)
+    elements.append(Paragraph("COORDONNÉES BANCAIRES POUR LE RÈGLEMENT", cond_style))
     
     bank_data = [
-        [Paragraph("<b>Banque:</b>", styles['CustomNormal']), 
-         Paragraph(facture.banque_nom, styles['CustomNormal'])],
-        [Paragraph("<b>IBAN:</b>", styles['CustomNormal']), 
-         Paragraph(facture.banque_iban, styles['CustomNormal'])],
-        [Paragraph("<b>BIC:</b>", styles['CustomNormal']), 
-         Paragraph(facture.banque_bic, styles['CustomNormal'])]
+        [Paragraph("Banque:", info_bold), Paragraph(facture.banque_nom, info_style)],
+        [Paragraph("IBAN:", info_bold), Paragraph(facture.banque_iban, info_style)],
+        [Paragraph("BIC:", info_bold), Paragraph(facture.banque_bic, info_style)]
     ]
     
-    bank_table = Table(bank_data, colWidths=[3*cm, 13*cm])
+    bank_table = Table(bank_data, colWidths=[2*cm, 14*cm])
     bank_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ffe8e8')),  # Légèrement rosé
-        ('BOX', (0, 0), (-1, -1), 1, COULEUR_ACCENT),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.white),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ffe8e8')),
+        ('BOX', (0, 0), (-1, -1), 0.5, COULEUR_ACCENT),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
     ]))
     
     elements.append(bank_table)
     
     # Mentions légales
-    elements.append(Spacer(1, 12*mm))
+    elements.append(Spacer(1, 8*mm))
     legal_text = """TVA sur les encaissements. En cas de retard de paiement, seront exigibles, conformément à l'article L441-10 du code de commerce, une indemnité calculée sur la base de trois fois le taux de l'intérêt légal en vigueur ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40 euros."""
     elements.append(Paragraph(legal_text, ParagraphStyle('LegalText', 
-        fontSize=8, textColor=colors.grey, fontName='Helvetica', alignment=TA_JUSTIFY)))
+        fontSize=7, textColor=colors.grey, fontName='Helvetica', alignment=TA_JUSTIFY)))
     
     # Construire le PDF
     def build_with_canvas(canvas_obj, doc):
