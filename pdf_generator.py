@@ -147,7 +147,7 @@ def generate_pdf_devis(devis):
     ]))
     
     elements.append(info_table)
-    elements.append(Spacer(1, 10*mm))
+    elements.append(Spacer(1, 8*mm))
     
     # Informations Fournisseur et Client - style exact du modèle
     company_label_style = ParagraphStyle('CompanyLabel', fontSize=10, textColor=colors.black, 
@@ -185,13 +185,14 @@ Numéro de TVA: {devis.client_tva}"""
     ]))
     
     elements.append(company_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 12*mm))
     
     # Texte d'introduction si présent
     if devis.texte_intro:
-        intro_style = ParagraphStyle('IntroStyle', fontSize=10, textColor=COULEUR_TEXTE, alignment=TA_JUSTIFY)
+        intro_style = ParagraphStyle('IntroStyle', fontSize=10, textColor=colors.black, 
+                                    alignment=TA_JUSTIFY)
         elements.append(Paragraph(devis.texte_intro, intro_style))
-        elements.append(Spacer(1, 10*mm))
+        elements.append(Spacer(1, 8*mm))
     
     # Tableau des articles avec en-tête noir comme le modèle
     items_data = []
@@ -219,23 +220,23 @@ Numéro de TVA: {devis.client_tva}"""
                                      alignment=TA_RIGHT)
     
     # Articles
-    for item in devis.items:
+    for i, item in enumerate(devis.items):
         # Vérifier si c'est une ligne de section (titre en majuscules)
         is_section = item.description.isupper()
         
         if is_section:
             # Ligne de section avec fond bleu et texte blanc
             items_data.append([
-                Paragraph(f"<font color='white'><b>{item.description}</b></font>", 
-                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white)),
-                Paragraph(f"<font color='white'>{item.quantite}</font>", 
+                Paragraph(f"<b>{item.description}</b>", 
+                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white, fontName='Helvetica-Bold')),
+                Paragraph(str(item.quantite), 
                          ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
-                Paragraph(f"<font color='white'>{item.prix_unitaire:.2f} €</font>", 
+                Paragraph(f"{item.prix_unitaire:.2f} €", 
                          ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT)),
-                Paragraph(f"<font color='white'>{item.tva_taux} %</font>", 
+                Paragraph(f"{item.tva_taux} %", 
                          ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
-                Paragraph(f"<font color='white'>{item.total_ht:.2f} €</font>", 
-                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT))
+                Paragraph(f"{item.total_ht:.2f} €", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
             ])
         else:
             # Description principale normale
@@ -310,6 +311,7 @@ Numéro de TVA: {devis.client_tva}"""
             table_style.append(('BACKGROUND', (0, row_num), (-1, row_num), colors.HexColor('#2d3436')))
             table_style.append(('TEXTCOLOR', (0, row_num), (-1, row_num), colors.white))
             table_style.append(('FONTNAME', (0, row_num), (-1, row_num), 'Helvetica-Bold'))
+            table_style.append(('FONTSIZE', (0, row_num), (-1, row_num), 9))
         
         row_num += 1
         
@@ -324,7 +326,7 @@ Numéro de TVA: {devis.client_tva}"""
     
     items_table.setStyle(TableStyle(table_style))
     elements.append(items_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 12*mm))
     
     # Totaux alignés à droite
     totals_style = ParagraphStyle('TotalsStyle', fontSize=10, textColor=colors.black)
@@ -428,16 +430,17 @@ def generate_pdf_facture(facture):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=1.5*cm,  # Réduit pour remonter le titre
+        topMargin=1*cm,  # Même marge que devis
         bottomMargin=3*cm
     )
     
     styles = create_styles()
     elements = []
     
-    # Titre aligné à gauche et remonté
+    # Titre aligné à gauche et remonté - VRAIMENT À GAUCHE
     title_style = ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
-                                fontName='Helvetica-Bold', spaceAfter=8, alignment=TA_LEFT)
+                                fontName='Helvetica-Bold', spaceAfter=5, 
+                                alignment=TA_LEFT, leftIndent=0)
     elements.append(Paragraph("Facture", title_style))
     
     # Informations de la facture - alignées en deux colonnes
@@ -553,23 +556,23 @@ Numéro de TVA: {facture.client_tva}"""
                                      alignment=TA_RIGHT)
     
     # Articles
-    for item in facture.items:
+    for i, item in enumerate(facture.items):
         # Vérifier si c'est une ligne de section
         is_section = item.description.isupper()
         
         if is_section:
             # Ligne de section avec fond bleu et texte blanc
             items_data.append([
-                Paragraph(f"<font color='white'><b>{item.description}</b></font>", 
-                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white)),
-                Paragraph(f"<font color='white'>{item.quantite}</font>", 
+                Paragraph(f"<b>{item.description}</b>", 
+                         ParagraphStyle('SectionStyle', fontSize=9, textColor=colors.white, fontName='Helvetica-Bold')),
+                Paragraph(str(item.quantite), 
                          ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
-                Paragraph(f"<font color='white'>{item.prix_unitaire:.2f} €</font>", 
+                Paragraph(f"{item.prix_unitaire:.2f} €", 
                          ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT)),
-                Paragraph(f"<font color='white'>{item.tva_taux} %</font>", 
+                Paragraph(f"{item.tva_taux} %", 
                          ParagraphStyle('SectionCenter', fontSize=9, textColor=colors.white, alignment=TA_CENTER)),
-                Paragraph(f"<font color='white'>{item.total_ht:.2f} €</font>", 
-                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT))
+                Paragraph(f"{item.total_ht:.2f} €", 
+                         ParagraphStyle('SectionRight', fontSize=9, textColor=colors.white, alignment=TA_RIGHT, fontName='Helvetica-Bold'))
             ])
         else:
             desc_text = f"<b>{item.description}</b>"
@@ -634,6 +637,7 @@ Numéro de TVA: {facture.client_tva}"""
             table_style.append(('BACKGROUND', (0, row_num), (-1, row_num), colors.HexColor('#2d3436')))
             table_style.append(('TEXTCOLOR', (0, row_num), (-1, row_num), colors.white))
             table_style.append(('FONTNAME', (0, row_num), (-1, row_num), 'Helvetica-Bold'))
+            table_style.append(('FONTSIZE', (0, row_num), (-1, row_num), 9))
         
         row_num += 1
         
@@ -645,7 +649,7 @@ Numéro de TVA: {facture.client_tva}"""
     
     items_table.setStyle(TableStyle(table_style))
     elements.append(items_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(Spacer(1, 12*mm))
     
     # Totaux
     totals_style = ParagraphStyle('TotalsStyle', fontSize=10, textColor=colors.black)
