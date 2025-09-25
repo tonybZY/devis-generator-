@@ -1,4 +1,4 @@
-# pdf_generator.py - Version avec design professionnel
+# pdf_generator.py - Version avec design professionnel et thèmes colorés
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
@@ -8,12 +8,58 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_JUSTIFY, TA_LEFT
 import os
 
-# Couleurs unifiées pour devis ET factures
-COULEUR_PRINCIPALE = colors.HexColor('#2c3e50')  # Bleu foncé pour tout
-COULEUR_SECONDAIRE = colors.HexColor('#34495e')  # Gris foncé
-COULEUR_ACCENT = colors.HexColor('#3498db')      # Bleu plus clair pour accents
-COULEUR_FOND = colors.HexColor('#ecf0f1')        # Gris clair
-COULEUR_TEXTE = colors.HexColor('#2c3e50')       # Texte principal
+# Thèmes de couleurs disponibles
+THEMES_COULEURS = {
+    'bleu': {
+        'principale': colors.HexColor('#2c3e50'),
+        'secondaire': colors.HexColor('#34495e'), 
+        'accent': colors.HexColor('#3498db'),
+        'fond': colors.HexColor('#ecf0f1'),
+        'header_bg': colors.HexColor('#2d3436')
+    },
+    'vert': {
+        'principale': colors.HexColor('#27ae60'),
+        'secondaire': colors.HexColor('#2d5016'), 
+        'accent': colors.HexColor('#58d68d'),
+        'fond': colors.HexColor('#e8f8f5'),
+        'header_bg': colors.HexColor('#1e8449')
+    },
+    'rouge': {
+        'principale': colors.HexColor('#e74c3c'),
+        'secondaire': colors.HexColor('#922b21'), 
+        'accent': colors.HexColor('#f1948a'),
+        'fond': colors.HexColor('#fadbd8'),
+        'header_bg': colors.HexColor('#c0392b')
+    },
+    'violet': {
+        'principale': colors.HexColor('#9b59b6'),
+        'secondaire': colors.HexColor('#6c3483'), 
+        'accent': colors.HexColor('#d7bde2'),
+        'fond': colors.HexColor('#f4ecf7'),
+        'header_bg': colors.HexColor('#8e44ad')
+    },
+    'orange': {
+        'principale': colors.HexColor('#e67e22'),
+        'secondaire': colors.HexColor('#a04000'), 
+        'accent': colors.HexColor('#f5b041'),
+        'fond': colors.HexColor('#fdeaa7'),
+        'header_bg': colors.HexColor('#d35400')
+    },
+    'noir': {
+        'principale': colors.HexColor('#2c3e50'),
+        'secondaire': colors.HexColor('#34495e'), 
+        'accent': colors.HexColor('#95a5a6'),
+        'fond': colors.HexColor('#ecf0f1'),
+        'header_bg': colors.HexColor('#2c3e50')
+    }
+}
+
+# Couleurs par défaut (pour compatibilité)
+COULEUR_PRINCIPALE = colors.HexColor('#2c3e50')
+COULEUR_SECONDAIRE = colors.HexColor('#34495e')
+COULEUR_ACCENT = colors.HexColor('#3498db')
+COULEUR_FOND = colors.HexColor('#ecf0f1')
+COULEUR_TEXTE = colors.HexColor('#2c3e50')
 
 class SimpleCanvas(canvas.Canvas):
     """Canvas simple pour ajouter le footer personnalisé"""
@@ -52,8 +98,8 @@ class SimpleCanvas(canvas.Canvas):
         
         self.restoreState()
 
-def create_styles():
-    """Créer les styles personnalisés minimaux pour le document"""
+def create_styles(couleurs):
+    """Créer les styles personnalisés avec les couleurs du thème"""
     styles = getSampleStyleSheet()
     
     # Styles de base nécessaires
@@ -61,7 +107,7 @@ def create_styles():
         'CustomNormal',
         parent=styles['Normal'],
         fontSize=10,
-        textColor=COULEUR_TEXTE,
+        textColor=couleurs['principale'],
         fontName='Helvetica'
     ))
     
@@ -69,7 +115,7 @@ def create_styles():
         'SectionHeader',
         parent=styles['Normal'],
         fontSize=11,
-        textColor=COULEUR_PRINCIPALE,
+        textColor=couleurs['principale'],
         fontName='Helvetica-Bold',
         spaceAfter=5
     ))
@@ -87,16 +133,19 @@ def create_styles():
         'MoneyStyle',
         parent=styles['Normal'],
         fontSize=10,
-        textColor=COULEUR_PRINCIPALE,
+        textColor=couleurs['principale'],
         fontName='Helvetica-Bold',
         alignment=TA_RIGHT
     ))
     
     return styles
 
-def generate_pdf_devis(devis):
-    """Générer un PDF de devis avec le design demandé"""
-    filename = os.path.join('generated', f'devis_{devis.numero}.pdf')
+def generate_pdf_devis(devis, theme='bleu'):
+    """Générer un PDF de devis avec le thème de couleur choisi"""
+    # Récupérer les couleurs du thème
+    couleurs = THEMES_COULEURS.get(theme, THEMES_COULEURS['bleu'])
+    
+    filename = os.path.join('generated', f'devis_{devis.numero}_{theme}.pdf')
     
     # Configuration du document
     doc = SimpleDocTemplate(
@@ -104,11 +153,11 @@ def generate_pdf_devis(devis):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=0.8*cm,  # Encore plus réduit pour remonter davantage le titre
+        topMargin=0.8*cm,
         bottomMargin=3*cm
     )
     
-    styles = create_styles()
+    styles = create_styles(couleurs)
     elements = []
     
     # Titre dans une table pour forcer l'alignement à gauche
@@ -124,8 +173,6 @@ def generate_pdf_devis(devis):
     elements.append(title_table)
     
     # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
-    
-    # Créer deux colonnes : labels à gauche, valeurs à droite
     left_column_data = """<b>Numéro de devis</b><br/>
 <b>Date d'émission</b><br/>
 <b>Date d'expiration</b>"""
@@ -156,9 +203,7 @@ def generate_pdf_devis(devis):
     elements.append(info_table)
     elements.append(Spacer(1, 10*mm))
     
-    # Informations Fournisseur et Client - style exact du modèle
-    company_label_style = ParagraphStyle('CompanyLabel', fontSize=10, textColor=colors.black, 
-                                        fontName='Helvetica-Bold', leftIndent=0, rightIndent=0)
+    # Informations Fournisseur et Client
     company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0, rightIndent=0)
     
     # Créer les contenus en une seule cellule par colonne
@@ -196,14 +241,14 @@ Numéro de TVA: {devis.client_tva}"""
     
     # Texte d'introduction si présent
     if devis.texte_intro:
-        intro_style = ParagraphStyle('IntroStyle', fontSize=10, textColor=COULEUR_TEXTE, alignment=TA_JUSTIFY)
+        intro_style = ParagraphStyle('IntroStyle', fontSize=10, textColor=couleurs['principale'], alignment=TA_JUSTIFY)
         elements.append(Paragraph(devis.texte_intro, intro_style))
         elements.append(Spacer(1, 10*mm))
     
-    # Tableau des articles avec en-tête noir comme le modèle
+    # Tableau des articles avec en-tête coloré selon le thème
     items_data = []
     
-    # En-tête du tableau - exactement comme le modèle
+    # En-tête du tableau avec la couleur du thème
     headers = [
         Paragraph("<b>Description</b>", ParagraphStyle('TableHeader', 
             textColor=colors.white, fontSize=10, fontName='Helvetica-Bold')),
@@ -232,7 +277,6 @@ Numéro de TVA: {devis.client_tva}"""
         
         # Si il y a des détails, les ajouter sur des lignes séparées
         if item.details:
-            # Les détails sont dans une cellule séparée qui span toutes les colonnes
             items_data.append([
                 Paragraph(desc_text, item_desc_style),
                 Paragraph(str(item.quantite), item_center_style),
@@ -270,10 +314,10 @@ Numéro de TVA: {devis.client_tva}"""
     col_widths = [8.5*cm, 2*cm, 3*cm, 2.5*cm, 2.5*cm]
     items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
     
-    # Style du tableau - exactement comme le modèle
+    # Style du tableau avec la couleur du thème pour l'en-tête
     table_style = [
-        # En-tête noir
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3436')),
+        # En-tête avec couleur du thème
+        ('BACKGROUND', (0, 0), (-1, 0), couleurs['header_bg']),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
@@ -291,7 +335,7 @@ Numéro de TVA: {devis.client_tva}"""
         ('ALIGN', (3, 1), (3, -1), 'CENTER'),
         ('ALIGN', (4, 1), (4, -1), 'RIGHT'),
         
-        # Bordures grises fines comme le modèle
+        # Bordures grises fines
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#b2bec3')),
         
         # Padding
@@ -411,9 +455,12 @@ Numéro de TVA: {devis.client_tva}"""
     
     return filename
 
-def generate_pdf_facture(facture):
-    """Générer un PDF de facture avec le même design"""
-    filename = os.path.join('generated', f'facture_{facture.numero}.pdf')
+def generate_pdf_facture(facture, theme='bleu'):
+    """Générer un PDF de facture avec le thème de couleur choisi"""
+    # Récupérer les couleurs du thème
+    couleurs = THEMES_COULEURS.get(theme, THEMES_COULEURS['bleu'])
+    
+    filename = os.path.join('generated', f'facture_{facture.numero}_{theme}.pdf')
     
     # Configuration du document
     doc = SimpleDocTemplate(
@@ -421,11 +468,11 @@ def generate_pdf_facture(facture):
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=0.8*cm,  # Encore plus réduit pour remonter davantage le titre
+        topMargin=0.8*cm,
         bottomMargin=3*cm
     )
     
-    styles = create_styles()
+    styles = create_styles(couleurs)
     elements = []
     
     # Titre dans une table pour forcer l'alignement à gauche
@@ -441,8 +488,6 @@ def generate_pdf_facture(facture):
     elements.append(title_table)
     
     # Informations de la facture - alignées en deux colonnes
-    
-    # Créer deux colonnes
     left_column_data = "<b>Numéro de facture</b><br/>"
     left_column_data += "<b>Date d'émission</b><br/>"
     left_column_data += "<b>Date d'échéance</b><br/>"
@@ -453,7 +498,7 @@ def generate_pdf_facture(facture):
     right_column_data += f"{facture.date_echeance}<br/>"
     
     # Statut avec couleur
-    statut_color = COULEUR_ACCENT
+    statut_color = couleurs['accent']
     if facture.statut_paiement == "En retard":
         statut_color = colors.HexColor('#e74c3c')
     elif facture.statut_paiement == "Payée":
@@ -491,7 +536,7 @@ def generate_pdf_facture(facture):
     elements.append(info_table)
     elements.append(Spacer(1, 10*mm))
     
-    # Informations Fournisseur et Client - style exact du modèle
+    # Informations Fournisseur et Client
     company_info_style = ParagraphStyle('CompanyInfo', fontSize=10, textColor=colors.black, leftIndent=0, rightIndent=0)
     
     # Créer les contenus
@@ -530,7 +575,7 @@ Numéro de TVA: {facture.client_tva}"""
     # Tableau des articles - même style que devis
     items_data = []
     
-    # En-tête
+    # En-tête avec couleur du thème
     headers = [
         Paragraph("<b>Description</b>", ParagraphStyle('TableHeader', 
             textColor=colors.white, fontSize=10, fontName='Helvetica-Bold')),
@@ -591,9 +636,9 @@ Numéro de TVA: {facture.client_tva}"""
     col_widths = [8.5*cm, 2*cm, 3*cm, 2.5*cm, 2.5*cm]
     items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
     
-    # Style du tableau
+    # Style du tableau avec couleur du thème
     table_style = [
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3436')),
+        ('BACKGROUND', (0, 0), (-1, 0), couleurs['header_bg']),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
