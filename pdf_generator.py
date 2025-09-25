@@ -160,6 +160,8 @@ def create_header_with_logo(logo_url, title, title_size=18):
             ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
         ]))
         return title_table
+
+def create_styles(couleurs):
     """Créer les styles personnalisés avec les couleurs du thème"""
     styles = getSampleStyleSheet()
     
