@@ -1,4 +1,4 @@
-# docx_generator.py - Version améliorée avec support des factures
+# docx_generator.py - Version améliorée avec support des factures et thèmes colorés
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -7,15 +7,52 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import os
 
+# Thèmes de couleurs pour DOCX (format RGB)
+THEMES_COULEURS_DOCX = {
+    'bleu': {
+        'principale': RGBColor(44, 62, 80),
+        'header_bg': "2d3436",
+        'accent': RGBColor(52, 152, 219)
+    },
+    'vert': {
+        'principale': RGBColor(39, 174, 96),
+        'header_bg': "1e8449", 
+        'accent': RGBColor(88, 214, 141)
+    },
+    'rouge': {
+        'principale': RGBColor(231, 76, 60),
+        'header_bg': "c0392b",
+        'accent': RGBColor(241, 148, 138)
+    },
+    'violet': {
+        'principale': RGBColor(155, 89, 182),
+        'header_bg': "8e44ad",
+        'accent': RGBColor(215, 189, 226)
+    },
+    'orange': {
+        'principale': RGBColor(230, 126, 34),
+        'header_bg': "d35400",
+        'accent': RGBColor(245, 176, 65)
+    },
+    'noir': {
+        'principale': RGBColor(44, 62, 80),
+        'header_bg': "2c3e50",
+        'accent': RGBColor(149, 165, 166)
+    }
+}
+
 def set_cell_background(cell, color):
     """Définir la couleur de fond d'une cellule"""
     shading_elm = OxmlElement("w:shd")
     shading_elm.set(qn("w:fill"), color)
     cell._element.get_or_add_tcPr().append(shading_elm)
 
-def generate_docx_devis(devis):
-    """Générer un DOCX de devis modifiable"""
-    filename = os.path.join('generated', f'devis_{devis.numero}.docx')
+def generate_docx_devis(devis, theme='bleu'):
+    """Générer un DOCX de devis modifiable avec thème coloré"""
+    # Récupérer les couleurs du thème
+    couleurs = THEMES_COULEURS_DOCX.get(theme, THEMES_COULEURS_DOCX['bleu'])
+    
+    filename = os.path.join('generated', f'devis_{devis.numero}_{theme}.docx')
     doc = Document()
     
     # Styles du document
@@ -28,12 +65,12 @@ def generate_docx_devis(devis):
     title = doc.add_heading('DEVIS', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.LEFT
     
-    # Nom de l'entreprise
+    # Nom de l'entreprise avec couleur du thème
     company = doc.add_paragraph()
     company.add_run(devis.fournisseur_nom.upper()).bold = True
     company.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     company.runs[0].font.size = Pt(16)
-    company.runs[0].font.color.rgb = RGBColor(52, 152, 219)  # Bleu
+    company.runs[0].font.color.rgb = couleurs['principale']
     
     doc.add_paragraph()  # Espace
     
@@ -81,16 +118,16 @@ def generate_docx_devis(devis):
     items_table.style = 'Table Grid'
     items_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     
-    # En-têtes avec fond coloré
+    # En-têtes avec fond coloré selon le thème
     headers = ['Description', 'Qté', 'Prix unitaire', 'TVA (%)', 'Total HT']
     header_cells = items_table.rows[0].cells
     for i, header in enumerate(headers):
         header_cells[i].text = header
-        # Mettre en gras et colorer
+        # Mettre en gras et colorer avec le thème
         run = header_cells[i].paragraphs[0].runs[0]
         run.bold = True
         run.font.color.rgb = RGBColor(255, 255, 255)  # Blanc
-        set_cell_background(header_cells[i], "2C3E50")  # Bleu foncé
+        set_cell_background(header_cells[i], couleurs['header_bg'])
         # Alignement
         if i > 0:
             header_cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -144,13 +181,13 @@ def generate_docx_devis(devis):
         totals_table.cell(i, 0).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
         totals_table.cell(i, 1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
         
-        # Mettre en gras et colorer la ligne TOTAL TTC
+        # Mettre en gras et colorer la ligne TOTAL TTC avec couleur du thème
         if i == 2:
             for j in range(2):
                 run = totals_table.cell(i, j).paragraphs[0].runs[0]
                 run.bold = True
                 run.font.size = Pt(12)
-                run.font.color.rgb = RGBColor(44, 62, 80)  # Bleu foncé
+                run.font.color.rgb = couleurs['principale']
     
     doc.add_paragraph()  # Espace
     
@@ -193,9 +230,12 @@ def generate_docx_devis(devis):
     doc.save(filename)
     return filename
 
-def generate_docx_facture(facture):
-    """Générer un DOCX de facture modifiable"""
-    filename = os.path.join('generated', f'facture_{facture.numero}.docx')
+def generate_docx_facture(facture, theme='bleu'):
+    """Générer un DOCX de facture modifiable avec thème coloré"""
+    # Récupérer les couleurs du thème
+    couleurs = THEMES_COULEURS_DOCX.get(theme, THEMES_COULEURS_DOCX['bleu'])
+    
+    filename = os.path.join('generated', f'facture_{facture.numero}_{theme}.docx')
     doc = Document()
     
     # Styles du document
@@ -208,12 +248,12 @@ def generate_docx_facture(facture):
     title = doc.add_heading('FACTURE', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.LEFT
     
-    # Nom de l'entreprise
+    # Nom de l'entreprise avec couleur du thème
     company = doc.add_paragraph()
     company.add_run(facture.fournisseur_nom.upper()).bold = True
     company.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     company.runs[0].font.size = Pt(16)
-    company.runs[0].font.color.rgb = RGBColor(231, 76, 60)  # Rouge pour facture
+    company.runs[0].font.color.rgb = couleurs['principale']
     
     doc.add_paragraph()  # Espace
     
@@ -246,7 +286,7 @@ def generate_docx_facture(facture):
                 elif value == 'Payée':
                     run.font.color.rgb = RGBColor(39, 174, 96)  # Vert
                 else:
-                    run.font.color.rgb = RGBColor(52, 152, 219)  # Bleu
+                    run.font.color.rgb = couleurs['principale']  # Couleur du thème
                 run.bold = True
             
             row_index += 1
@@ -256,9 +296,6 @@ def generate_docx_facture(facture):
         info_table._element.remove(info_table.rows[row_index]._element)
     
     doc.add_paragraph()  # Espace
-    
-    # Le reste est similaire au devis...
-    # [Code identique pour les sections client, articles, totaux, etc.]
     
     # Informations Fournisseur / Client
     doc.add_heading('ÉMETTEUR', level=2)
@@ -273,7 +310,7 @@ def generate_docx_facture(facture):
     items_table = doc.add_table(rows=1, cols=5)
     items_table.style = 'Table Grid'
     
-    # En-têtes
+    # En-têtes avec couleur du thème
     headers = ['Description', 'Qté', 'Prix unitaire', 'TVA (%)', 'Total HT']
     header_cells = items_table.rows[0].cells
     for i, header in enumerate(headers):
@@ -281,7 +318,7 @@ def generate_docx_facture(facture):
         run = header_cells[i].paragraphs[0].runs[0]
         run.bold = True
         run.font.color.rgb = RGBColor(255, 255, 255)
-        set_cell_background(header_cells[i], "E74C3C")  # Rouge pour facture
+        set_cell_background(header_cells[i], couleurs['header_bg'])
     
     # Ajouter les articles
     for item in facture.items:
@@ -318,11 +355,12 @@ def generate_docx_facture(facture):
         totals_table.cell(i, 0).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
         totals_table.cell(i, 1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
         
-        if i == 2:  # Total TTC
+        if i == 2:  # Total TTC avec couleur du thème
             for j in range(2):
                 run = totals_table.cell(i, j).paragraphs[0].runs[0]
                 run.bold = True
                 run.font.size = Pt(12)
+                run.font.color.rgb = couleurs['principale']
     
     # Conditions et informations bancaires
     doc.add_paragraph()
