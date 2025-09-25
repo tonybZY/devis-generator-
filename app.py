@@ -1,4 +1,4 @@
-# app.py - Version améliorée avec authentification et factures
+# app.py - Version améliorée avec authentification, factures et thèmes colorés
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -19,6 +19,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Clés API (à stocker dans des variables d'environnement en production)
 API_KEY_1 = os.environ.get('API_KEY_1', 'your-secret-key-1-here')
 API_KEY_2 = os.environ.get('API_KEY_2', 'your-secret-key-2-here')
+
+# Thèmes disponibles
+THEMES_DISPONIBLES = ['bleu', 'vert', 'rouge', 'violet', 'orange', 'noir']
 
 def require_api_keys(f):
     """Décorateur pour vérifier les 2 clés API"""
@@ -41,12 +44,25 @@ def require_api_keys(f):
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
+@app.route('/api/themes', methods=['GET'])
+def get_themes():
+    """Retourner la liste des thèmes disponibles"""
+    return jsonify({
+        "themes_disponibles": THEMES_DISPONIBLES,
+        "theme_par_defaut": "bleu"
+    }), 200
+
 @app.route('/api/devis', methods=['POST'])
 @require_api_keys
 def create_devis():
     """Créer un nouveau devis avec les données reçues"""
     try:
         data = request.json
+        
+        # Récupérer et valider le thème
+        theme = data.get('theme', 'bleu')
+        if theme not in THEMES_DISPONIBLES:
+            theme = 'bleu'  # fallback vers le thème par défaut
         
         # Créer l'objet devis avec toutes les options modifiables
         devis = Devis(
@@ -107,7 +123,8 @@ def create_devis():
         output_format = data.get('format', 'pdf').lower()
         
         if output_format == 'pdf':
-            filename = generate_pdf_devis(devis)
+            # MODIFICATION IMPORTANTE: Passer le thème à la fonction
+            filename = generate_pdf_devis(devis, theme=theme)
             mimetype = 'application/pdf'
         elif output_format == 'docx':
             filename = generate_docx_devis(devis)
@@ -120,7 +137,7 @@ def create_devis():
             filename,
             mimetype=mimetype,
             as_attachment=True,
-            download_name=f"devis_{devis.numero}.{output_format}"
+            download_name=f"devis_{devis.numero}_{theme}.{output_format}"
         )
         
     except Exception as e:
@@ -132,6 +149,11 @@ def create_facture():
     """Créer une nouvelle facture avec les données reçues"""
     try:
         data = request.json
+        
+        # Récupérer et valider le thème
+        theme = data.get('theme', 'bleu')
+        if theme not in THEMES_DISPONIBLES:
+            theme = 'bleu'  # fallback vers le thème par défaut
         
         # Créer l'objet facture
         facture = Facture(
@@ -193,7 +215,8 @@ def create_facture():
         output_format = data.get('format', 'pdf').lower()
         
         if output_format == 'pdf':
-            filename = generate_pdf_facture(facture)
+            # MODIFICATION IMPORTANTE: Passer le thème à la fonction
+            filename = generate_pdf_facture(facture, theme=theme)
             mimetype = 'application/pdf'
         elif output_format == 'docx':
             filename = generate_docx_facture(facture)
@@ -205,7 +228,7 @@ def create_facture():
             filename,
             mimetype=mimetype,
             as_attachment=True,
-            download_name=f"facture_{facture.numero}.{output_format}"
+            download_name=f"facture_{facture.numero}_{theme}.{output_format}"
         )
         
     except Exception as e:
