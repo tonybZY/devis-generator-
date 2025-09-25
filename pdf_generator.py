@@ -138,15 +138,16 @@ def create_header_with_logo(logo_url, title, title_size=18):
         fontSize=title_size, textColor=colors.black, fontName='Helvetica-Bold', leftIndent=0))
     
     if logo:
-        # Créer un tableau avec logo à gauche et titre à droite
-        header_data = [[logo, title_paragraph]]
-        header_table = Table(header_data, colWidths=[4*cm, 14*cm])
+        # MODIFICATION: Créer un tableau avec titre à gauche et logo à droite
+        header_data = [[title_paragraph, logo]]  # Inverser l'ordre
+        header_table = Table(header_data, colWidths=[14*cm, 4*cm])  # Inverser les largeurs
         header_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('LEFTPADDING', (0, 0), (-1, -1), 0),
             ('RIGHTPADDING', (0, 0), (-1, -1), 0),
             ('TOPPADDING', (0, 0), (-1, -1), 0),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),  # AJOUT: Aligner le logo à droite dans sa cellule
         ]))
         return header_table
     else:
