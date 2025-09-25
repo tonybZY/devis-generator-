@@ -1,12 +1,14 @@
-# pdf_generator.py - Version avec design professionnel et thèmes colorés
+# pdf_generator.py - Version avec design professionnel, thèmes colorés et support logo
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm, mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_JUSTIFY, TA_LEFT
 import os
+import requests
+from io import BytesIO
 
 # Thèmes de couleurs disponibles
 THEMES_COULEURS = {
@@ -98,7 +100,66 @@ class SimpleCanvas(canvas.Canvas):
         
         self.restoreState()
 
-def create_styles(couleurs):
+def download_logo(logo_url):
+    """Télécharger et traiter le logo depuis une URL"""
+    if not logo_url:
+        return None
+    
+    try:
+        # Télécharger l'image avec un timeout
+        response = requests.get(logo_url, timeout=10)
+        if response.status_code == 200:
+            img_data = BytesIO(response.content)
+            logo = Image(img_data)
+            
+            # Redimensionner le logo (hauteur max 2.5cm)
+            max_height = 2.5 * cm
+            logo.drawHeight = max_height
+            logo.drawWidth = max_height * logo.imageWidth / logo.imageHeight
+            
+            # Si le logo est trop large, le redimensionner par la largeur
+            max_width = 4 * cm
+            if logo.drawWidth > max_width:
+                logo.drawWidth = max_width
+                logo.drawHeight = max_width * logo.imageHeight / logo.imageWidth
+            
+            return logo
+    except Exception as e:
+        print(f"Erreur lors du téléchargement du logo: {e}")
+        return None
+    
+    return None
+
+def create_header_with_logo(logo_url, title, title_size=18):
+    """Créer l'en-tête avec logo et titre"""
+    logo = download_logo(logo_url)
+    
+    title_paragraph = Paragraph(title, ParagraphStyle('Title', 
+        fontSize=title_size, textColor=colors.black, fontName='Helvetica-Bold', leftIndent=0))
+    
+    if logo:
+        # Créer un tableau avec logo à gauche et titre à droite
+        header_data = [[logo, title_paragraph]]
+        header_table = Table(header_data, colWidths=[4*cm, 14*cm])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        return header_table
+    else:
+        # Pas de logo, titre seul dans un tableau
+        title_data = [[title_paragraph]]
+        title_table = Table(title_data, colWidths=[18*cm])
+        title_table.setStyle(TableStyle([
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        return title_table
     """Créer les styles personnalisés avec les couleurs du thème"""
     styles = getSampleStyleSheet()
     
@@ -160,17 +221,9 @@ def generate_pdf_devis(devis, theme='bleu'):
     styles = create_styles(couleurs)
     elements = []
     
-    # Titre dans une table pour forcer l'alignement à gauche
-    title_data = [[Paragraph("Devis", ParagraphStyle('Title', fontSize=18, textColor=colors.black, 
-                                fontName='Helvetica-Bold', leftIndent=0))]]
-    title_table = Table(title_data, colWidths=[18*cm])
-    title_table.setStyle(TableStyle([
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-    ]))
-    elements.append(title_table)
+    # En-tête avec logo et titre
+    header_table = create_header_with_logo(devis.logo_url, "Devis", 18)
+    elements.append(header_table)
     
     # Informations du devis - alignées en deux colonnes comme Fournisseur/Client
     left_column_data = """<b>Numéro de devis</b><br/>
@@ -475,17 +528,9 @@ def generate_pdf_facture(facture, theme='bleu'):
     styles = create_styles(couleurs)
     elements = []
     
-    # Titre dans une table pour forcer l'alignement à gauche
-    title_data = [[Paragraph("Facture", ParagraphStyle('Title', fontSize=16, textColor=colors.black, 
-                                fontName='Helvetica-Bold', leftIndent=0))]]
-    title_table = Table(title_data, colWidths=[18*cm])
-    title_table.setStyle(TableStyle([
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-    ]))
-    elements.append(title_table)
+    # En-tête avec logo et titre
+    header_table = create_header_with_logo(facture.logo_url, "Facture", 16)
+    elements.append(header_table)
     
     # Informations de la facture - alignées en deux colonnes
     left_column_data = "<b>Numéro de facture</b><br/>"
