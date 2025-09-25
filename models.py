@@ -33,6 +33,9 @@ class Devis:
         self.client_tva = client_tva
         self.client_email = kwargs.get('client_email', '')
         
+        # Logo de l'entreprise
+        self.logo_url = kwargs.get('logo_url', '')
+        
         # Autres champs
         self.banque_nom = kwargs.get('banque_nom', '')
         self.banque_iban = kwargs.get('banque_iban', '')
@@ -75,6 +78,9 @@ class Facture:
         self.client_siret = client_siret
         self.client_tva = client_tva
         self.client_email = kwargs.get('client_email', '')
+        
+        # Logo de l'entreprise
+        self.logo_url = kwargs.get('logo_url', '')
         
         # Spécifique facture
         self.statut_paiement = kwargs.get('statut_paiement', 'En attente')
