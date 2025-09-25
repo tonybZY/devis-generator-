@@ -87,6 +87,9 @@ def create_devis():
             client_telephone=data.get('client_telephone', ''),
             client_email=data.get('client_email', ''),
             
+            # Logo de l'entreprise
+            logo_url=data.get('logo_url', ''),
+            
             # Informations bancaires (modifiables)
             banque_nom=data.get('banque_nom', 'BNP Paribas'),
             banque_iban=data.get('banque_iban', 'FR76 3000 4008 2800 0123 4567 890'),
@@ -177,6 +180,9 @@ def create_facture():
             client_tva=data.get('client_tva'),
             client_telephone=data.get('client_telephone', ''),
             client_email=data.get('client_email', ''),
+            
+            # Logo de l'entreprise
+            logo_url=data.get('logo_url', ''),
             
             # Informations bancaires
             banque_nom=data.get('banque_nom', 'BNP Paribas'),
