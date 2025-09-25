@@ -1,11 +1,13 @@
-# docx_generator.py - Version améliorée avec support des factures et thèmes colorés
+# docx_generator.py - Version améliorée avec support des factures, thèmes colorés et logos
 from docx import Document
-from docx.shared import Pt, Cm, RGBColor
+from docx.shared import Pt, Cm, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import os
+import requests
+from io import BytesIO
 
 # Thèmes de couleurs pour DOCX (format RGB)
 THEMES_COULEURS_DOCX = {
@@ -47,8 +49,85 @@ def set_cell_background(cell, color):
     shading_elm.set(qn("w:fill"), color)
     cell._element.get_or_add_tcPr().append(shading_elm)
 
+def download_and_add_logo(doc, logo_url):
+    """Télécharger le logo et l'ajouter au document DOCX"""
+    if not logo_url:
+        return None
+    
+    try:
+        # Télécharger l'image avec un timeout
+        response = requests.get(logo_url, timeout=10)
+        if response.status_code == 200:
+            img_data = BytesIO(response.content)
+            
+            # Créer un paragraphe pour le logo aligné à droite
+            logo_paragraph = doc.add_paragraph()
+            logo_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            
+            # Ajouter l'image avec une taille maximale
+            run = logo_paragraph.runs[0] if logo_paragraph.runs else logo_paragraph.add_run()
+            picture = run.add_picture(img_data, width=Inches(1.5))  # 1.5 pouces de largeur max
+            
+            return logo_paragraph
+    except Exception as e:
+        print(f"Erreur lors du téléchargement du logo: {e}")
+        return None
+    
+    return None
+
+def create_header_with_logo_and_title(doc, logo_url, title):
+    """Créer l'en-tête avec titre à gauche et logo à droite"""
+    # Créer un tableau invisible pour aligner titre (gauche) et logo (droite)
+    header_table = doc.add_table(rows=1, cols=2)
+    header_table.style = 'Table Grid'
+    
+    # Supprimer les bordures du tableau
+    for row in header_table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.color.rgb = RGBColor(0, 0, 0)
+    
+    # Cellule de gauche : Titre
+    title_cell = header_table.cell(0, 0)
+    title_paragraph = title_cell.paragraphs[0]
+    title_run = title_paragraph.add_run(title)
+    title_run.font.size = Pt(20)
+    title_run.bold = True
+    title_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    
+    # Cellule de droite : Logo
+    logo_cell = header_table.cell(0, 1)
+    logo_paragraph = logo_cell.paragraphs[0]
+    logo_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    
+    # Télécharger et ajouter le logo
+    if logo_url:
+        try:
+            response = requests.get(logo_url, timeout=10)
+            if response.status_code == 200:
+                img_data = BytesIO(response.content)
+                run = logo_paragraph.add_run()
+                run.add_picture(img_data, width=Inches(1.2))  # 1.2 pouces de largeur
+        except Exception as e:
+            print(f"Erreur lors du téléchargement du logo: {e}")
+    
+    # Supprimer les bordures du tableau
+    tbl = header_table._tbl
+    for row in tbl.tr_lst:
+        for cell in row.tc_lst:
+            tcPr = cell.tcPr
+            tcBorders = OxmlElement("w:tcBorders")
+            for border in ['top', 'left', 'bottom', 'right']:
+                border_elm = OxmlElement(f"w:{border}")
+                border_elm.set(qn("w:val"), "nil")
+                tcBorders.append(border_elm)
+            tcPr.append(tcBorders)
+    
+    return header_table
+
 def generate_docx_devis(devis, theme='bleu'):
-    """Générer un DOCX de devis modifiable avec thème coloré"""
+    """Générer un DOCX de devis modifiable avec thème coloré et logo"""
     # Récupérer les couleurs du thème
     couleurs = THEMES_COULEURS_DOCX.get(theme, THEMES_COULEURS_DOCX['bleu'])
     
@@ -61,9 +140,8 @@ def generate_docx_devis(devis, theme='bleu'):
     font.name = 'Arial'
     font.size = Pt(10)
     
-    # En-tête - Titre
-    title = doc.add_heading('DEVIS', 0)
-    title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    # NOUVEAU: En-tête avec titre et logo
+    create_header_with_logo_and_title(doc, devis.logo_url, "DEVIS")
     
     # Nom de l'entreprise avec couleur du thème
     company = doc.add_paragraph()
@@ -231,7 +309,7 @@ def generate_docx_devis(devis, theme='bleu'):
     return filename
 
 def generate_docx_facture(facture, theme='bleu'):
-    """Générer un DOCX de facture modifiable avec thème coloré"""
+    """Générer un DOCX de facture modifiable avec thème coloré et logo"""
     # Récupérer les couleurs du thème
     couleurs = THEMES_COULEURS_DOCX.get(theme, THEMES_COULEURS_DOCX['bleu'])
     
@@ -244,9 +322,8 @@ def generate_docx_facture(facture, theme='bleu'):
     font.name = 'Arial'
     font.size = Pt(10)
     
-    # En-tête - Titre FACTURE
-    title = doc.add_heading('FACTURE', 0)
-    title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    # NOUVEAU: En-tête avec titre et logo
+    create_header_with_logo_and_title(doc, facture.logo_url, "FACTURE")
     
     # Nom de l'entreprise avec couleur du thème
     company = doc.add_paragraph()
